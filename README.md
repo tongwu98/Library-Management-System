@@ -1,8 +1,7 @@
 # Library Management System
 
 A small Java 25 / Spring Boot 4.1.2 REST API for managing and borrowing books.
-Storage is an in-memory map: **all data is lost when the application stops**.
-Authentication and concurrent modifications are out of scope.
+Storage is an in-memory map
 
 ## Requirements
 
