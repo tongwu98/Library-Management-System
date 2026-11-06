@@ -1,0 +1,189 @@
+openapi: 3.1.2
+info:
+  title: Library Management API
+  version: 1.0.0
+  description: |
+    A small, in-memory library. Each record represents one physical copy.
+    Data is lost when the process stops. Concurrent modifications are out of scope.
+paths:
+  /api/books:
+    get:
+      operationId: listBooks
+      summary: List or search all books, including borrowed copies
+      parameters:
+        - name: q
+          in: query
+          description: Case-insensitive substring in title or author. Blank or omitted lists all books.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Books in insertion order
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BookResponse'
+    post:
+      operationId: addBook
+      summary: Add an available copy of a book
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBookRequest'
+      responses:
+        '201':
+          description: Book created with surrounding title and author whitespace removed
+          headers:
+            Location:
+              description: Relative URL of the created book
+              required: true
+              schema:
+                type: string
+                format: uri-reference
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /api/books/{id}:
+    parameters:
+      - $ref: '#/components/parameters/BookId'
+    get:
+      operationId: getBook
+      summary: Retrieve a book
+      responses:
+        '200':
+          $ref: '#/components/responses/Book'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      operationId: removeBook
+      summary: Remove an available book
+      responses:
+        '204':
+          description: Removed, with no response body
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /api/books/{id}/borrow:
+    parameters:
+      - $ref: '#/components/parameters/BookId'
+    post:
+      operationId: borrowBook
+      summary: Borrow an available book
+      responses:
+        '200':
+          $ref: '#/components/responses/Book'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /api/books/{id}/return:
+    parameters:
+      - $ref: '#/components/parameters/BookId'
+    post:
+      operationId: returnBook
+      summary: Return a borrowed book
+      responses:
+        '200':
+          $ref: '#/components/responses/Book'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+components:
+  parameters:
+    BookId:
+      name: id
+      in: path
+      required: true
+      description: Generated book ID; unknown IDs return 404
+      schema:
+        type: integer
+        format: int64
+  responses:
+    Book:
+      description: Book with its current availability
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BookResponse'
+    BadRequest:
+      description: Invalid input, malformed or missing JSON, or a nonnumeric ID
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    NotFound:
+      description: Book does not exist
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Conflict:
+      description: Already borrowed, not currently borrowed, or removing a borrowed book
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+  schemas:
+    CreateBookRequest:
+      type: object
+      required: [title, author]
+      properties:
+        title:
+          type: string
+          pattern: '[\s\S]*\S[\s\S]*'
+          description: Nonblank title; surrounding whitespace is removed
+        author:
+          type: string
+          pattern: '[\s\S]*\S[\s\S]*'
+          description: Nonblank author; surrounding whitespace is removed
+    BookResponse:
+      type: object
+      required: [id, title, author, available]
+      properties:
+        id:
+          type: integer
+          format: int64
+        title:
+          type: string
+        author:
+          type: string
+        available:
+          type: boolean
+    Problem:
+      type: object
+      description: RFC 9457 error response; validation errors include an errors map
+      required: [type, title, status, detail]
+      properties:
+        type:
+          type: string
+          format: uri-reference
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+          format: uri-reference
+        errors:
+          type: object
+          additionalProperties:
+            type: string
