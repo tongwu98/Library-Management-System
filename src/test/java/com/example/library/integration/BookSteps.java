@@ -23,6 +23,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 public class BookSteps {
 
@@ -137,15 +138,12 @@ public class BookSteps {
 	public void listedBooks(DataTable table) {
 		assertStatus(200);
 		Book[] actual = books();
-		var expected = table.asMaps();
-		assertThat(actual).hasSize(expected.size()).extracting(Book::id).doesNotHaveDuplicates();
-		for (int index = 0; index < actual.length; index++) {
-			Book book = actual[index];
-			assertThat(book.id()).isPositive();
-			assertThat(book.title()).isEqualTo(expected.get(index).get("title"));
-			assertThat(book.author()).isEqualTo(expected.get(index).get("author"));
-			assertThat(book.available()).isTrue();
-		}
+		var expected = table.asMaps().stream().map(row -> tuple(row.get("title"), row.get("author"), true)).toList();
+		assertThat(actual).allSatisfy(book -> assertThat(book.id()).isPositive())
+			.extracting(Book::id)
+			.doesNotHaveDuplicates();
+		assertThat(actual).extracting(Book::title, Book::author, Book::available)
+			.containsExactlyInAnyOrderElementsOf(expected);
 	}
 
 	@Then("the library should contain {int} books")

@@ -18,7 +18,7 @@ paths:
             type: string
       responses:
         '200':
-          description: Books in insertion order
+          description: All books matching the optional search query
           content:
             application/json:
               schema:

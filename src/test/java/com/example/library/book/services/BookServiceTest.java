@@ -42,12 +42,12 @@ class BookServiceTest {
 	}
 
 	@Test
-	void givenDuplicateTitles_whenAddingBooks_thenStoresSeparateCopiesInInsertionOrder() {
+	void givenDuplicateTitles_whenAddingBooks_thenStoresSeparateCopies() {
 		Book first = addItalianMenuBook();
 		Book second = addItalianMenuBook();
 
 		assertThat(second.id()).isGreaterThan(first.id());
-		assertThat(service.list(null)).containsExactly(first, second);
+		assertThat(service.list(null)).containsExactlyInAnyOrder(first, second);
 	}
 
 	@ParameterizedTest
