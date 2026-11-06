@@ -27,11 +27,11 @@ class BookServiceTest {
 
 	@Test
 	void givenPaddedDetails_whenAddingBook_thenStoresTrimmedAvailableBook() {
-		Book book = service.add(new CreateBookRequest("  Dune  ", "  Frank Herbert  "));
+		Book book = service.add(new CreateBookRequest("  Crescendo Italian Cuisine Menu  ", "  Cristian  "));
 
 		assertThat(book.id()).isPositive();
-		assertThat(book.title()).isEqualTo("Dune");
-		assertThat(book.author()).isEqualTo("Frank Herbert");
+		assertThat(book.title()).isEqualTo("Crescendo Italian Cuisine Menu");
+		assertThat(book.author()).isEqualTo("Cristian");
 		assertThat(book.available()).isTrue();
 		assertThat(service.get(book.id())).isEqualTo(book);
 	}
@@ -43,41 +43,41 @@ class BookServiceTest {
 
 	@Test
 	void givenDuplicateTitles_whenAddingBooks_thenStoresSeparateCopiesInInsertionOrder() {
-		Book first = addDune();
-		Book second = addDune();
+		Book first = addItalianMenuBook();
+		Book second = addItalianMenuBook();
 
 		assertThat(second.id()).isGreaterThan(first.id());
 		assertThat(service.list(null)).containsExactly(first, second);
 	}
 
 	@ParameterizedTest
-	@ValueSource(strings = { "DUNE", "herBERT", "  dune  ", "une", "Frank" })
+	@ValueSource(strings = { "ITALIAN", "crisTIAN", "  italian  ", "talian", "Crist" })
 	void givenMatchingTitleOrAuthor_whenSearching_thenMatchesIgnoringCase(String query) {
-		Book dune = addDune();
-		service.add(new CreateBookRequest("Foundation", "Isaac Asimov"));
+		Book italianMenu = addItalianMenuBook();
+		service.add(new CreateBookRequest("Crescendo Dutch Cuisine Menu", "Yemoe"));
 
-		assertThat(service.list(query)).containsExactly(dune);
+		assertThat(service.list(query)).containsExactly(italianMenu);
 	}
 
 	@ParameterizedTest
 	@NullAndEmptySource
 	@ValueSource(strings = { "   " })
 	void givenBlankQuery_whenSearching_thenListsEveryBook(String query) {
-		Book book = addDune();
+		Book book = addItalianMenuBook();
 
 		assertThat(service.list(query)).containsExactly(book);
 	}
 
 	@Test
 	void givenUnmatchedQuery_whenSearching_thenReturnsEmptyList() {
-		addDune();
+		addItalianMenuBook();
 
 		assertThat(service.list("unknown")).isEmpty();
 	}
 
 	@Test
 	void givenAvailableBook_whenBorrowedAndReturned_thenPreservesDetailsAndUpdatesStorage() {
-		Book original = addDune();
+		Book original = addItalianMenuBook();
 
 		Book borrowed = service.borrow(original.id());
 		assertThat(borrowed).isEqualTo(new Book(original.id(), original.title(), original.author(), false));
@@ -92,7 +92,7 @@ class BookServiceTest {
 
 	@Test
 	void givenBorrowedBook_whenBorrowingAgain_thenRejectsWithoutChangingAvailability() {
-		Book book = addDune();
+		Book book = addItalianMenuBook();
 		service.borrow(book.id());
 
 		assertThatExceptionOfType(BookConflictException.class).isThrownBy(() -> service.borrow(book.id()))
@@ -102,7 +102,7 @@ class BookServiceTest {
 
 	@Test
 	void givenAvailableBook_whenReturning_thenRejectsWithoutChangingAvailability() {
-		Book book = addDune();
+		Book book = addItalianMenuBook();
 
 		assertThatExceptionOfType(BookConflictException.class).isThrownBy(() -> service.returnBook(book.id()))
 			.withMessageContaining("not currently borrowed");
@@ -111,17 +111,17 @@ class BookServiceTest {
 
 	@Test
 	void givenAvailableBook_whenRemoving_thenDeletesBookWithoutReusingId() {
-		Book first = addDune();
+		Book first = addItalianMenuBook();
 		service.remove(first.id());
 
 		assertThat(service.list(null)).isEmpty();
 		assertThatExceptionOfType(BookNotFoundException.class).isThrownBy(() -> service.get(first.id()));
-		assertThat(addDune().id()).isGreaterThan(first.id());
+		assertThat(addItalianMenuBook().id()).isGreaterThan(first.id());
 	}
 
 	@Test
 	void givenBorrowedBook_whenRemoving_thenRejectsUntilBookIsReturned() {
-		Book book = addDune();
+		Book book = addItalianMenuBook();
 		service.borrow(book.id());
 
 		assertThatExceptionOfType(BookConflictException.class).isThrownBy(() -> service.remove(book.id()))
@@ -144,17 +144,17 @@ class BookServiceTest {
 
 	@Test
 	void givenListedBooks_whenLibraryChanges_thenSnapshotRemainsImmutableAndUnchanged() {
-		Book book = addDune();
+		Book book = addItalianMenuBook();
 		List<Book> snapshot = service.list(null);
 		service.borrow(book.id());
-		addDune();
+		addItalianMenuBook();
 
 		assertThat(snapshot).containsExactly(book);
 		assertThatExceptionOfType(UnsupportedOperationException.class).isThrownBy(snapshot::clear);
 	}
 
-	private Book addDune() {
-		return service.add(new CreateBookRequest("Dune", "Frank Herbert"));
+	private Book addItalianMenuBook() {
+		return service.add(new CreateBookRequest("Crescendo Italian Cuisine Menu", "Cristian"));
 	}
 
 }
